@@ -1,0 +1,31 @@
+Setup file for PRP500 processing.
+File = ~/swmain/apps/prp_process_v500/0_setup_process.pl
+========================================================
+TERMINAL
+* 0_setup_process.txt -- edit for processing
+* 1_make_furuno_gps_flat -- we need position data. Mirai saves gpgga
+* 2_make_da0raw_flat.pl -- Process each sweep. da0raw_flat, dax_flat (x=1:7), dag_flat
+MATLAB
+* a0_setup_process_sweeps.m -- read parameters
+* a1_raw_txt2mat.m -- mat files
+!!! add gps to a1.
+* *** do now a2_plot_raw.m -- details, sweeps, other diognostic
+
+//============ PROCESS RAW DATA CAPTURE ==============================================
+DATAPATH: /Users/rmr/data/prp/prp11/170630_prp11_burnin
+PRPRX FILE: /Users/rmr/Dropbox/instruments/PRP_FRSR/PrpCal/PRP/11_jamstec/1706/prprx_11_1706.txt
+FILENAME: prpcap.txt
+SERIES: prp11bi1
+STARTTIME: 2017 06 29 20 00 00
+ENDTIME: 2017 06 30 15 00 00
+TIME CORRECTION SEC: 0
+
+GPS FLAG: FIXED
+FIXED LAT: 45
+FIXED LON: -122
+
+	//============ PROCESS RAW DATA CAPTURE ==============================================
+	DATAPATH: /Users/rmr/data/prp07/160727_capture
+	FILENAME: prpcap.txt
+	//============ MIRAI SAMPLE ==============================================
+	DATAPATH: /Volumes/hd15/20160325_mirai_sample
