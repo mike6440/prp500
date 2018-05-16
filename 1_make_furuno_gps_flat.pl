@@ -13,12 +13,23 @@ use perltools::MRtime;
 
 my $setupfile="0_setup_process.txt";
 
+my $str = FindInfo($setupfile,'GPS FLAG');
+if($str =~ /FIXED/i){
+	$fixedpositionflag=1;
+	$fixedlat=FindInfo($setupfile,'FIXED LAT');
+	$fixedlon=FindInfo($setupfile,'FIXED LON');
+	print"FIXED POSITION: lat=$fixedlat, lon=$fixedlon\n";
+	exit 0;
+} else {
+	$fixedpositionflag=0;
+	print"Use GPGGA files\n";
+}
+die;
 		# DATAPATH 
 my $datapath = FindInfo($setupfile,'DATAPATH',':');
 print "DATAPATH = $datapath   ";
 if ( ! -d $datapath ) { print"DOES NOT EXIST. STOP.\n"; exit 1}
 else {print "EXISTS.\n"}
-
 		# TIMESERIESPATH
 my $timeseriespath=$datapath.'/timeseries';
 print"TIMESERIESPATH = $timeseriespath.\n";
@@ -26,9 +37,11 @@ if ( ! -d $timeseriespath ) {
 	`mkdir $timeseriespath`;
 	print"Create $timeseriespath\n";
 }
-
-$setupfile=$datapath.'/process_info/su.txt';
-
+		# INFOFILE 
+my $infofile = FindInfo($setupfile,'INFOFILE',':');
+print "INFOFILE = $infofile   ";
+if ( ! -f $infofile ) { print"DOES NOT EXIST. STOP.\n"; exit 1}
+else {print "EXISTS.\n"}
 		# START AND END TIMES
 $str = FindInfo($setupfile,'STARTTIME');
 my @k=split /[ ,]+/,$str;
@@ -40,10 +53,10 @@ $str = FindInfo($setupfile,'ENDTIME');
 @k=split /[ ,]+/,$str;
 $dtend = datesec($k[0],$k[1],$k[2],$k[3],$k[4],$k[5]);
 printf "START %s   END %s\n",dtstr($dtstart), dtstr($dtend);
-
 	# PC CLOCK ERROR
 $timecorrect=FindInfo($setupfile,"TIME CORRECTION SEC");
 print"TIME CORRECTION SEC=$timecorrect\n";
+
 
 # OPEN FLAT FILE FOR WRITE -- GPGGA
 $f = $timeseriespath.'/gpgga_flat.txt';
