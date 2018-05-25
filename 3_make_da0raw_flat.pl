@@ -20,18 +20,27 @@ print "DATAPATH = $datapath   ";
 if ( ! -d $datapath ) { print"DOES NOT EXIST. STOP.\n"; exit 1}
 else {print "EXISTS.\n"}
 		# TIMESERIESPATH
-my $timeseriespath=$datapath.'/timeseries';
+my $timeseriespath=FindInfo($setupfile,'TIMESERIESPATH');
 print"TIMESERIESPATH = $timeseriespath.\n";
 if ( ! -d $timeseriespath ) { 
 	`mkdir $timeseriespath`;
 	print"Create $timeseriespath\n";
 }
+		# IMAGEPATH
+my $imagepath=FindInfo($setupfile,'IMAGEPATH');
+print"IMAGEPATH = $imagepath.\n";
+if ( ! -d $imagepath ) { 
+	`mkdir $imagepath`;
+	print"Create $imagepath\n";
+}
 	# RUN TIME SETUP FILE
 $sufile=`ls -1 $datapath/data/data*/su*.txt | tail -1`;
 chomp $sufile;
 print"last setup file = $sufile\n";
+
 	# SERIES
 $series=FindInfo($setupfile,'SERIES');
+
 	# START AND END TIMES
 $str = FindInfo($setupfile,'STARTTIME');
 my @k=split /[ ,]+/,$str;

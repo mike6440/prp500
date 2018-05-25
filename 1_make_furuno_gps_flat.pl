@@ -14,7 +14,7 @@ use perltools::MRtime;
 my $setupfile="0_setup_process.txt";
 
 my $str = FindInfo($setupfile,'GPS FLAG');
-if($str =~ /FIXED/i){
+if($str == 1){
 	$fixedpositionflag=1;
 	$fixedlat=FindInfo($setupfile,'FIXED LAT');
 	$fixedlon=FindInfo($setupfile,'FIXED LON');

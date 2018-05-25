@@ -17,31 +17,44 @@ $VERSION = '1';
 my $setupfile="0_setup_process.txt";
 		# DATAPATH 
 my $datapath = FindInfo($setupfile,'DATAPATH',':');
-my $timeseriespath=$datapath.'/timeseries';
-$setupfile=$datapath.'/process_info/su.txt';
-		# START AND END TIMES
+print "DATAPATH = $datapath   ";
+if ( ! -d $datapath ) { print"DOES NOT EXIST. STOP.\n"; exit 1}
+else {print "EXISTS.\n"}
+		# TIMESERIESPATH
+my $timeseriespath=FindInfo($setupfile,'TIMESERIESPATH');
+print"TIMESERIESPATH = $timeseriespath.\n";
+if ( ! -d $timeseriespath ) { 
+	`mkdir $timeseriespath`;
+	print"Create $timeseriespath\n";
+}
+		# IMAGEPATH
+my $imagepath=FindInfo($setupfile,'IMAGEPATH');
+print"IMAGEPATH = $imagepath.\n";
+if ( ! -d $imagepath ) { 
+	`mkdir $imagepath`;
+	print"Create $imagepath\n";
+}
+	# STARTTIME
 $str = FindInfo($setupfile,'STARTTIME');
 my @k=split /[ ,]+/,$str;
 $dtstart = datesec($k[0],$k[1],$k[2],$k[3],$k[4],$k[5]);
+$dtstartday = datesec($k[0],$k[1],$k[2],0,0,0);
+	# ENDTIME
 $str = FindInfo($setupfile,'ENDTIME');
 @k=split /[ ,]+/,$str;
 $dtend = datesec($k[0],$k[1],$k[2],$k[3],$k[4],$k[5]);
 printf "START %s   END %s\n",dtstr($dtstart), dtstr($dtend);
-
-	# PROCESS_INFO_FRSR FILE
-my $infofrsrfile = $datapath.'/process_info/frsr.txt';
+	# Calibration file
+my $infofrsrfile = `last_su.pl`;
 print"FRSR INFORMATION FILE $infofrsrfile -- ";
 if (! -f $infofrsrfile){print"DOES NOT EXIST. STOP\n"; exit 1}
 print"EXISTS.\n"; 
-
 		# SOLFLUX
 $str = FindInfo($setupfile,"SOLFLUX PARAMETERS");
 print"SOLFLUX PARAMETERS:";
 @solfluxparams=split(/[, ]+/,$str);
 foreach(@solfluxparams){print"   $_"}
 print"\n";
-
-
 #=======================
 #   GPS
 #=======================
@@ -49,11 +62,11 @@ print"\n";
 # we can derive a position from a position file that was generated from a co-running
 # DAQ program or from a supplement data file such as a SCS GPS raw file.  Special programs
 # will be required for each different supplement file.
-$FixedLocation = FindInfo($setupfile,"GPS FIXED FLAG");
+$FixedLocation = FindInfo($setupfile,"GPS FLAG");
 if($FixedLocation == 1){
-	$latfix=FindInfo($setupfile,"FIXED LATITUDE",':');
-	$lonfix=FindInfo($setupfile,"FIXED LONGITUDE",':');
-	$magvar=FindInfo($setupfile,"FIXED VARIATION",':');
+	$latfix=FindInfo($setupfile,"FIXED LAT",':');
+	$lonfix=FindInfo($setupfile,"FIXED LON",':');
+	$magvar=FindInfo($setupfile,"FIXED VAR",':');
 	printf"USING FIXED LOCATION  LAT=%.6f   LON=%.6f   VAR=%.1f\n",$latfix,$lonfix,$magvar;
 }
 else {
@@ -86,20 +99,18 @@ else {
 	print"TCM CORRECTIONS, pitch=$pitchcorrection, roll=$rollcorrection\n";
 }
 $missing=-999;
-
 	# MFR TEMP LIMS
-$theadmin=FindInfo($infofrsrfile,"THEADMIN");
+$theadmin=FindInfo($setupfile,"THEADMIN");
 printf"THEADMIN = %.1f\n", $theadmin;
-$theadmax=FindInfo($infofrsrfile,"THEADMAX");
+$theadmax=FindInfo($setupfile,"THEADMAX");
 printf"THEADMAX = %.1f\n", $theadmax;
 	# SHADOW PROCESS LIMIT
-$shadowlimit=FindInfo($infofrsrfile,"PROC SHADOW LIMIT");
+$shadowlimit=FindInfo($setupfile,"SHADOW THRESHOLD");
 printf"shadowlimit = %.1f\n", $shadowlimit;
 
-
-# OUTPUT da0
-# nrec yyyy MM dd hh mm ss lat lon saz sze sw lw tcase tdome pitch roll az sog cog hdg sol_n sol_d
-#                                  deg deg w/m^2  C      C     deg deg  deg m/s m/s dg     w/m^2
+	# OUTPUT da0
+	# nrec yyyy MM dd hh mm ss lat lon saz sze sw lw tcase tdome pitch roll az sog cog hdg sol_n sol_d
+	#                                  deg deg w/m^2  C      C     deg deg  deg m/s m/s dg     w/m^2
 my $outfile = "$timeseriespath/da0raw.txt";
 open F, ">$outfile" or die;
 print"OUTPUT RAW DA0 FILE: $outfile\n";
@@ -118,17 +129,17 @@ my $nrec=0;
 while(<D>) {
 	chomp($str=$_);
 	@w=split(/[ ]+/,$str);
-	#$i=0; foreach(@w){print"$i  $_\n"; $i++}
+	#$i=0; foreach(@w){print"$i  $_\n"; $i++} die;
 		# SHADOW CHECK
-	if($w[1] >= $shadowlimit){
+	#if($w[1] >= $shadowlimit){
+	if(1){								# for da0raw take all RR records
 			# TIME CHECK
 		$dt=datesec($w[3],$w[4],$w[5],$w[6],$w[7],$w[8]);
 		if($dt >= $dtstart){
 			$shrat=$w[1];
-			$thead = $w[9];			
+			$thead = $w[10];
 				# HEAD TEMP CHECK
 			if($thead >= $theadmin && $thead <= $theadmax){
-		
 					#===================
 					# GPS OR FIXED LOCATION
 					#===================
@@ -157,9 +168,9 @@ while(<D>) {
 				# TILT - pitch, roll, tcmaz;
 				# !! todo - allow an outside data file here
 				if($FixedTilt==0){
-					$pitch=$w[15]+$pitchcorrection;
-					$roll=$w[16]+$rollcorrection;
-					$tcmaz=$w[17]+$azcorrection;
+					$pitch=$w[16]+$pitchcorrection;
+					$roll=$w[17]+$rollcorrection;
+					$tcmaz=$w[18]+$azcorrection;
 				}
 				else {
 					$pitch=$pitchfix;
@@ -168,11 +179,11 @@ while(<D>) {
 				}
 				
 				# RAD
-				$sw = $w[10];
-				$lw = $w[11];
-				$pir = $w[12];
-				$tc = $w[13];
-				$td = $w[14];
+				$sw = $w[11];
+				$lw = $w[12];
+				$pir = $w[13];
+				$tc = $w[14];
+				$td = $w[15];
 				
 				#============
 				#  DERIVED VARIABLES

@@ -46,13 +46,9 @@
 # printf"%s\n",dtstr($dt,'csv');
 # exit 0;
 
-
-
-
-
 $PROGRAMNAME = $0;
-$VERSION = '1';
-$EDIT = '20180515T215451Z';
+$VERSION = '2';
+$EDIT = '20180523T141543Z';
 
 #====================
 # PRE-DECLARE SUBROUTINES
@@ -71,11 +67,18 @@ print "DATAPATH = $datapath   ";
 if ( ! -d $datapath ) { print"DOES NOT EXIST. STOP.\n"; exit 1}
 else {print "EXISTS.\n"}
 		# TIMESERIESPATH
-my $timeseriespath=$datapath.'/timeseries';
+my $timeseriespath=FindInfo($setupfile,'TIMESERIESPATH');
 print"TIMESERIESPATH = $timeseriespath.\n";
 if ( ! -d $timeseriespath ) { 
 	`mkdir $timeseriespath`;
 	print"Create $timeseriespath\n";
+}
+		# IMAGEPATH
+my $imagepath=FindInfo($setupfile,'IMAGEPATH');
+print"IMAGEPATH = $imagepath.\n";
+if ( ! -d $imagepath ) { 
+	`mkdir $imagepath`;
+	print"Create $imagepath\n";
 }
 	# RUN TIME SETUP FILE
 $sufile=`ls -1 $datapath/data/data*/su*.txt | tail -1`;
@@ -174,179 +177,190 @@ if ($#w < 0 ) { print"Error, no raw files\n"; exit 1}
 	# FIND THE FIRST RAW FILE 
 foreach $frw (@w){
 	chomp($frw);
-	print"OPEN $frw\n";
-	open(FIN,$frw) or die;
-	# READ EACH RECORD
-	while (<FIN>) {
-		chomp($str=$_);
-		$str=~s/[#\n\r]+//g;
-# 		print"STRING: $str\n";
-		@r=split /[\s]+/g,$str;
-		#$i=0; foreach $rx (@r){print"$i, $rx\n";$i++} die;
-			# Mode 0==low, 1=high no shadow, 2=high shadow
-		$Mode=-1;
-		if($#r==40 && $r[1]==1){$Mode=1}
-		elsif($#r==40 && $r[1]==0){$Mode=0}
-		elsif($#r==201 && $r[1]==1){$Mode=2}
-		else{$ibad++}
+	  # CHECK FILE DATE
+	$fileday=substr($frw,-10,6);
+	  # STARTDAY
+	$startday=substr(dtstr($dtstart,'short'),2,6);
+	$endday=substr(dtstr($dtend,'short'),2,6);
+	#print"file $fileday, start $startday\n";
+	if($fileday<$startday || $fileday>$endday)
+	{
+		print "skip $frw\n";
+	} else {
+		print"PROCESS $frw\n";
+		open(FIN,$frw) or die;
+		# READ EACH RECORD
+		while (<FIN>) {
+			chomp($str=$_);
+			$str=~s/[#\n\r]+//g;
+	# 		print"STRING: $str\n";
+			@r=split /[\s]+/g,$str;
+			#$i=0; foreach $rx (@r){print"$i, $rx\n";$i++} die;
+				# Mode 0==low, 1=high no shadow, 2=high shadow
+			$Mode=-1;
+			if($#r==40 && $r[1]==1){$Mode=1}
+			elsif($#r==40 && $r[1]==0){$Mode=0}
+			elsif($#r==201 && $r[1]==1){$Mode=2}
+			else{$ibad++}
 
-# 		print"Mode $Mode, WIPRR\n";
-		$dt=dtstr2dt($r[0]);
-# 		printf"%s\n",dtstr($dt,'csv');
-		$record{mode}=$r[1];
-		$record{thead}=$r[2];
-		if($Mode>0){$record{shadow}=$r[25]}else{$record{shadow}=0}
+	# 		print"Mode $Mode, WIPRR\n";
+			$dt=dtstr2dt($r[0]);
+	# 		printf"%s\n",dtstr($dt,'csv');
+			$record{mode}=$r[1];
+			$record{thead}=$r[2];
+			if($Mode>0){$record{shadow}=$r[25]}else{$record{shadow}=0}
 	
-			# pitch and roll av[0],av[1]
-		for($i=3; $i<=4; $i++){
-			$n=0; $x=0;
-			if($r[$i]>-20 && $r[$i]<20){
-				$n++; $x=$r[$i];
-			}
-			if($r[$i+11]>-20 && $r[$i+11]<20){
-				$n++; $x+=$r[$i+11];
-			}
-			if($n==0){$x=$missing} else{$x=$x/$n}
-			push @av,$x;
-		}
-			# azimuth av[2]
-		$i=5;
-			$n=0; $x=0;
-			if($r[$i]>=0 && $r[$i]<=360){
-				$n++; $x=$r[$i];
-			}
-			if($r[$i+11]>=0 && $r[$i+11]<=360){
-				$n++; $x+=$r[$i+11];
-			}
-			if($n==0){$x=$missing} else{$x=$x/$n}
-			push @av,$x;	
-			# 16 bit ADC    av[3]...av[10]
-		for($i=6; $i<=13; $i++){
-			$n=0; $x=0;
-			if($r[$i]>-100 && $r[$i]<4000){
-				$n++; $x=$r[$i];
-			}
-			if($r[$i+11]>-100 && $r[$i+11]<4000){
-				$n++; $x+=$r[$i+11];
-			}
-			if($n==0){$x=$missing} else{$x=$x/$n}
-			push @av,$x;
-		}
-		#$i=0; foreach(@av){printf"debug:%3d %.3f\n",$i,$_; $i++}die;
-	
-		if($fixedtiltflag == 0){
-			%record=(%record,
-				p => $av[0]+$pitchcorrection,
-				r => $av[1]+$rollcorrection,
-				az => $av[2]+$headingcorrection,
-			);
-		}
-		else {
-			%record=(%record,
-				p => $fixedpitch+0.0001,
-				r => $fixedroll+0.0001,
-				az => $fixedheading+0.0001
-			);
-		}
-		%record=(%record,
-			psp => $av[3],
-			pirv => $av[4],
-			case => $av[5],
-			dome => $av[6],
-			batt => $av[10]*$battcal[0]+$battcal[1],
-			sw => $av[3]*$pspcal[0]+$pspcal[1],
-			pir => $av[4]*$pircal[0]+$pircal[1]
-		);
-			# T CASE
-		if($av[5]<=0){$record{case}=$missing;}
-		else {
-			$x=log($av[5]);
-			$y=$casecal[0]*$x*$x*$x + $casecal[1]*$x*$x + $casecal[2]*$x + $casecal[3];
-			if($y<=0){
-				$record{tcase}=$missing;
-			}else{
-				$record{tcase} = 1/$y -273.15;
-			}
-		}
-			# T DOME
-		if($av[6]<=0){$record{dome}=$missing;}
-		else {
-			$x=log($av[6]);
-			$y=$domecal[0]*$x*$x*$x + $domecal[1]*$x*$x + $domecal[2]*$x + $domecal[3];
-			if($y<=0){
-				$record{tdome}=$missing;
-			}else{
-				$record{tdome} = 1/$y -273.15;
-			}
-		}
-	
-		@x = ComputeLongwave($record{pir},$record{tcase},$record{tdome},$Kcoefficient,$sigma,$epsilon,$missing);
-		$record{lw}=$x[0];
-	
-# 		printf"mode = %d\n", $record{mode};
-# 		printf"Thead = %.2f\n", $record{thead};
-# 		printf"pitch=%.2f\n",$record{p};
-# 		printf"roll=%.2f\n",$record{r};
-# 		printf"heading=%.2f\n",$record{az};
-# 		printf"psp=%.2f  %.2f\n",$record{psp}, $record{sw};
-# 		printf"pir=%.2f   %.2f\n",$record{pirv}, $record{pir};
-# 		printf"case=%.2f   %.2f\n",$record{case}, $record{tcase};
-# 		printf"dome=%.2f   %.2f\n",$record{dome}, $record{tdome};
-# 		printf"lw = %.2f\n", $record{lw};
-# 		printf"batt=%.2f\n",$record{batt};
-			# WIPRR -- PRP BASIC DATA
-
-#$WIPRR,2018,05,14,00,03,15,1,40.8,44.7,10,6.57,361.14,-32.09,17.90,18.15,-5.0,3.0,356.3,13.8*4B
-		$str=sprintf"\$WIPRR,%s,%d,%.1f,%.1f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.1f,%.1f,%.1f,%.1f*",
-		dtstr($dt,'csv'),$record{mode},$record{thead},$record{shadow},$ShadowRatioThreshold,$record{sw},$record{lw},
-		$record{pir},$record{tcase},$record{tdome},$record{p},$record{r},$record{az},$record{batt};
-		$str=$str.NmeaChecksum($str);
-		print F "$str\n";
-		
-			# WIPRG -- GLOBAL
-		if ( $Mode > 0 ) {
-			for($i=27; $i<=33; $i++){
+				# pitch and roll av[0],av[1]
+			for($i=3; $i<=4; $i++){
 				$n=0; $x=0;
-				if($r[$i]>0 && $r[$i]<4000){
+				if($r[$i]>-20 && $r[$i]<20){
 					$n++; $x=$r[$i];
 				}
-				if($r[$i+7]>0 && $r[$i+7]<4000){
-					$n++; $x+=$r[$i+7];
+				if($r[$i+11]>-20 && $r[$i+11]<20){
+					$n++; $x+=$r[$i+11];
 				}
 				if($n==0){$x=$missing} else{$x=$x/$n}
-				$cmd=sprintf"\$record{g%d}=\$x;",$i-26;
-				eval $cmd;
+				push @av,$x;
 			}
-				# PRINT OUT
-			$str=sprintf"\$WIPRG,%s,%.1f",dtstr($dt,'csv'),$record{shadow};
-			for($i=1; $i<=7; $i++){
-				$cmd=sprintf"\$str=\$str.sprintf\",%%.1f\",\$record{g%d};",$i;
-				#print"cmd = $cmd\n";
-				eval $cmd;
+				# azimuth av[2]
+			$i=5;
+				$n=0; $x=0;
+				if($r[$i]>=0 && $r[$i]<=360){
+					$n++; $x=$r[$i];
+				}
+				if($r[$i+11]>=0 && $r[$i+11]<=360){
+					$n++; $x+=$r[$i+11];
+				}
+				if($n==0){$x=$missing} else{$x=$x/$n}
+				push @av,$x;	
+				# 16 bit ADC    av[3]...av[10]
+			for($i=6; $i<=13; $i++){
+				$n=0; $x=0;
+				if($r[$i]>-100 && $r[$i]<4000){
+					$n++; $x=$r[$i];
+				}
+				if($r[$i+11]>-100 && $r[$i+11]<4000){
+					$n++; $x+=$r[$i+11];
+				}
+				if($n==0){$x=$missing} else{$x=$x/$n}
+				push @av,$x;
 			}
-			$str=$str."*";
+			#$i=0; foreach(@av){printf"debug:%3d %.3f\n",$i,$_; $i++}die;
+	
+			if($fixedtiltflag == 0){
+				%record=(%record,
+					p => $av[0]+$pitchcorrection,
+					r => $av[1]+$rollcorrection,
+					az => $av[2]+$headingcorrection,
+				);
+			}
+			else {
+				%record=(%record,
+					p => $fixedpitch+0.0001,
+					r => $fixedroll+0.0001,
+					az => $fixedheading+0.0001
+				);
+			}
+			%record=(%record,
+				psp => $av[3],
+				pirv => $av[4],
+				case => $av[5],
+				dome => $av[6],
+				batt => $av[10]*$battcal[0]+$battcal[1],
+				sw => $av[3]*$pspcal[0]+$pspcal[1],
+				pir => $av[4]*$pircal[0]+$pircal[1]
+			);
+				# T CASE
+			if($av[5]<=0){$record{case}=$missing;}
+			else {
+				$x=log($av[5]);
+				$y=$casecal[0]*$x*$x*$x + $casecal[1]*$x*$x + $casecal[2]*$x + $casecal[3];
+				if($y<=0){
+					$record{tcase}=$missing;
+				}else{
+					$record{tcase} = 1/$y -273.15;
+				}
+			}
+				# T DOME
+			if($av[6]<=0){$record{dome}=$missing;}
+			else {
+				$x=log($av[6]);
+				$y=$domecal[0]*$x*$x*$x + $domecal[1]*$x*$x + $domecal[2]*$x + $domecal[3];
+				if($y<=0){
+					$record{tdome}=$missing;
+				}else{
+					$record{tdome} = 1/$y -273.15;
+				}
+			}
+	
+			@x = ComputeLongwave($record{pir},$record{tcase},$record{tdome},$Kcoefficient,$sigma,$epsilon,$missing);
+			$record{lw}=$x[0];
+	
+	# 		printf"mode = %d\n", $record{mode};
+	# 		printf"Thead = %.2f\n", $record{thead};
+	# 		printf"pitch=%.2f\n",$record{p};
+	# 		printf"roll=%.2f\n",$record{r};
+	# 		printf"heading=%.2f\n",$record{az};
+	# 		printf"psp=%.2f  %.2f\n",$record{psp}, $record{sw};
+	# 		printf"pir=%.2f   %.2f\n",$record{pirv}, $record{pir};
+	# 		printf"case=%.2f   %.2f\n",$record{case}, $record{tcase};
+	# 		printf"dome=%.2f   %.2f\n",$record{dome}, $record{tdome};
+	# 		printf"lw = %.2f\n", $record{lw};
+	# 		printf"batt=%.2f\n",$record{batt};
+				# WIPRR -- PRP BASIC DATA
+
+	#$WIPRR,2018,05,14,00,03,15,1,40.8,44.7,10,6.57,361.14,-32.09,17.90,18.15,-5.0,3.0,356.3,13.8*4B
+			$str=sprintf"\$WIPRR,%s,%d,%.1f,%.1f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.1f,%.1f,%.1f,%.1f*",
+			dtstr($dt,'csv'),$record{mode},$record{thead},$record{shadow},$ShadowRatioThreshold,$record{sw},$record{lw},
+			$record{pir},$record{tcase},$record{tdome},$record{p},$record{r},$record{az},$record{batt};
 			$str=$str.NmeaChecksum($str);
-			print F " $str\n";		
-		}
+			print F "$str\n";
 		
-			# SWEEPS
-		if ( $Mode > 1 ) {
-			$i0=41;
-			for( $i=1; $i<=7; $i++) {
-				$str="\$WIPR".sprintf"%d,%s,%.1f",$i,dtstr($dt,'csv'),$record{shadow};
-				for($j=1; $j<=23; $j++){
-					$cmd = sprintf("\$record\{a%d%02d\} = \$r\[%d\];",$i,$j,$i0);
-					$i0++;
-					#print"$cmd\n";
-					eval($cmd);
-					$cmd=sprintf"\$str=\$str.sprintf\",%%d\",\$record{a%d%02d};",$i,$j;
-					#print"$cmd\n";
+				# WIPRG -- GLOBAL
+			if ( $Mode > 0 ) {
+				for($i=27; $i<=33; $i++){
+					$n=0; $x=0;
+					if($r[$i]>0 && $r[$i]<4000){
+						$n++; $x=$r[$i];
+					}
+					if($r[$i+7]>0 && $r[$i+7]<4000){
+						$n++; $x+=$r[$i+7];
+					}
+					if($n==0){$x=$missing} else{$x=$x/$n}
+					$cmd=sprintf"\$record{g%d}=\$x;",$i-26;
+					eval $cmd;
+				}
+					# PRINT OUT
+				$str=sprintf"\$WIPRG,%s,%.1f",dtstr($dt,'csv'),$record{shadow};
+				for($i=1; $i<=7; $i++){
+					$cmd=sprintf"\$str=\$str.sprintf\",%%.1f\",\$record{g%d};",$i;
+					#print"cmd = $cmd\n";
 					eval $cmd;
 				}
 				$str=$str."*";
 				$str=$str.NmeaChecksum($str);
-				print F " $str\n";
-				#print " $str\n";  #-->> PRINT WIPR1...WIPR7
+				print F " $str\n";		
+			}
+		
+				# SWEEPS
+			if ( $Mode > 1 ) {
+				$i0=41;
+				for( $i=1; $i<=7; $i++) {
+					$str="\$WIPR".sprintf"%d,%s,%.1f",$i,dtstr($dt,'csv'),$record{shadow};
+					for($j=1; $j<=23; $j++){
+						$cmd = sprintf("\$record\{a%d%02d\} = \$r\[%d\];",$i,$j,$i0);
+						$i0++;
+						#print"$cmd\n";
+						eval($cmd);
+						$cmd=sprintf"\$str=\$str.sprintf\",%%d\",\$record{a%d%02d};",$i,$j;
+						#print"$cmd\n";
+						eval $cmd;
+					}
+					$str=$str."*";
+					$str=$str.NmeaChecksum($str);
+					print F " $str\n";
+					#print " $str\n";  #-->> PRINT WIPR1...WIPR7
+				}
 			}
 		}
 	}
