@@ -78,7 +78,6 @@ else {
 	open S, $gpsfile or die("FAILS TO OPEN");
 	chomp($str=<S>);  print"$str\n";
 }
-
 #=======================
 # FIXED TILT
 #=======================
@@ -107,7 +106,6 @@ printf"THEADMAX = %.1f\n", $theadmax;
 	# SHADOW PROCESS LIMIT
 $shadowlimit=FindInfo($setupfile,"SHADOW THRESHOLD");
 printf"shadowlimit = %.1f\n", $shadowlimit;
-
 	# OUTPUT da0
 	# nrec yyyy MM dd hh mm ss lat lon saz sze sw lw tcase tdome pitch roll az sog cog hdg sol_n sol_d
 	#                                  deg deg w/m^2  C      C     deg deg  deg m/s m/s dg     w/m^2
@@ -115,7 +113,8 @@ my $outfile = "$timeseriespath/da0raw.txt";
 open F, ">$outfile" or die;
 print"OUTPUT RAW DA0 FILE: $outfile\n";
 printf F "$PROGRAMNAME v$VERSION,  Runtime %s\n", dtstr(now);
-print F "nrec shrat yyyy MM dd hh mm ss thead lat lon saz sze sw lw piru tcase tdome pitch roll az sog cog hdg sol_n sol_d\n";
+$hdr="nrec shrat yyyy MM dd hh mm ss thead lat lon saz sze sw lw piru tcase tdome pitch roll az sog cog hdg sol_n sol_d";
+print F "$hdr\n";
 
 #  OPEN THE PRP_RAW FILE 
 $da0file = "$timeseriespath/da0raw_flat.txt";
@@ -192,7 +191,7 @@ while(<D>) {
 				($In,$Id) = solflux($ze,@solfluxparams);
 				#printf"solar az=%.1f, zenith=%.1f, Corrected zenith=%.1f\n",$saz,$ze,$ze0;
 				#printf"Theoretical Solflux  sw direct=%.1f, diffuse=%.1f\n",$In, $Id;
-			
+				#printf"Measured radiation   sw =      %.1f, longwave = %.1f\n",$sw,$lw;
 				#==============
 				# OUTPUT FILE
 				#print F "nrec shrat yyyy MM dd hh mm ss thead lat lon saz sze sw lw piru tcase tdome pitch roll az sog cog hdg sol_n sol_d\n";
@@ -201,7 +200,11 @@ while(<D>) {
 					dtstr($dt,'ssv'), $thead, $lat,$lon,$saz,$ze,$sw,$lw,$pir,$tc,$td,$pitch,
 					$roll,$tcmaz,$sog,$cog,$hdg,$In,$Id;
 				print F "$str\n";
-				$nrec++;
+				# print "$hdr\n";
+				# print "$str\n";
+				# @x=split /[, ]+/,$str; $i=0; foreach(@x){print"$i  $_\n"; $i++} die;
+				#$nrec++;
+				#if($nrec>4){die}
 			}
 		}
 	}

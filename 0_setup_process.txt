@@ -4,15 +4,19 @@ File = ~/swmain/apps/prp_process_v500/0_setup_process.pl
 TERMINAL
 * 0_setup_process.txt -- edit for processing
 * 1_make_furuno_gps_flat -- we need position data. Mirai saves gpgga
+   or edit fixed gps if the deployment was at a stationary site.
 * 2_make_da0raw_flat.pl -- Process each sweep. da0raw_flat, dax_flat (x=1:7), dag_flat
+   These are the basic flat files.
+* 3_make_da0raw_flat.pl -- Process the flat files to create the da0raw.txt
+
 MATLAB
 * a0_setup_process_sweeps.m -- read parameters
 * a1_raw_txt2mat.m -- mat files
 !!! add gps to a1.
 * *** do now a2_plot_raw.m -- details, sweeps, other diognostic
 
-	//=========== PRP7 BURNIN DOCK ==========
-	SERIES: prp7dock
+	//=========== PRP7 BURNIN AT RMRCO ==========
+	SERIES: prp7rmrco
 	DATAPATH: /Users/rmr/data/20180513_prp7burnin1
 	TIMESERIESPATH: /Users/rmr/data/20180513_prp7burnin1/timeseries
 	IMAGEPATH: /Users/rmr/data/20180513_prp7burnin1/images
@@ -30,14 +34,14 @@ MATLAB
 	TEMPRANGE: 0 70
 	//=========== PRP7 BURNIN DOCK ==========
 SERIES: prp7dock
-DATAPATH: /Users/rmr/data/20180513_prp7burnin1
-TIMESERIESPATH: /Users/rmr/data/20180513_prp7burnin1/timeseriesdock
-IMAGEPATH: /Users/rmr/data/20180513_prp7burnin1/imagesdock
-STARTTIME: 2018 05 19 16 15 00
-ENDTIME: 2018 05 22 18 0 0
+DATAPATH: /Users/rmr/Dropbox/data/20180513_prp7burnin1
+TIMESERIESPATH: /Users/rmr/Dropbox/data/20180513_prp7burnin1/timeseriesdock
+IMAGEPATH: /Users/rmr/Dropbox/data/20180513_prp7burnin1/imagesdock
+STARTTIME: 2018, 5, 19, 16, 15, 0
+ENDTIME: 2018, 5, 26, 0, 0, 0
 TIME CORRECTION SEC: 0
 SHADOW THRESHOLD: 10
-GPS FLAG: 1
+GPS FIXED FLAG: 1
   #Ocean Dock 47.64962 -122.31312
   #rmrco 47.60328 -122.28793
 FIXED LAT: 47.64962
@@ -47,7 +51,7 @@ LATRANGE: 45.0 60.0
 LONRANGE: -140 -110
 TEMPRANGE: 0 70
 SOLFLUX PARAMETERS: .05,1000,.2,.2,.001
-TILT FIXED FLAG: 1
+TILT FIXED FLAG: 0
 FIXED PITCH: 0
 FIXED ROLL: 0
 FIXED HEADING: 0
@@ -55,6 +59,13 @@ PITCH CORRECTION: 0
 ROLL CORRECTION: 0
 THEADMIN: 35
 THEADMAX: 45
+NUMBER LANGLY: 4
+2018,05,22,14,26,50   2018,05,22,19,57,36
+2018,05,22,00,21,41   2018,05,22,03,55,32
+2018,05,23,13,37,58   2018,05,23,19,28,11
+2018,05,23,20,07,06   2018,05,24,02,16,46
+
+
 	//============ PROCESS RAW DATA CAPTURE ==============================================
 	DATAPATH: /Users/rmr/data/prp/prp11/170630_prp11_burnin
 	PRPRX FILE: /Users/rmr/Dropbox/instruments/PRP_FRSR/PrpCal/PRP/11_jamstec/1706/prprx_11_1706.txt

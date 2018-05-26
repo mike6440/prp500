@@ -60,6 +60,7 @@ use perltools::MRradiation;
 use perltools::MRstatistics;
 
 my $setupfile="0_setup_process.txt";
+my @av=(5);
 
 		# DATAPATH 
 my $datapath = FindInfo($setupfile,'DATAPATH',':');
@@ -139,7 +140,7 @@ print"battery coefs: @battcal\n";
 	# OUT FILE
 $rawoutfile=sprintf"$timeseriespath/raw_parse.txt",$dt[0],$dt[1],$dt[2];
 open F,">$rawoutfile" or die;
-print F "WIPRR yyyy MM dd hh mm ss M Thd shad shadlim sw lw pir tcase tdome batt
+print F "WIPRR yyyy MM dd hh mm ss M Thd shad shadlim sw lw pir tcase tdome pitch roll hdg batt
  WIPRG yyyy MM dd hh mm ss shad g1 g2 g3 g4 g5 g6 g7
  WIPR1 yyyy MM dd hh mm ss shad s1 s2 ... s12 ... s23\n";
 
@@ -170,10 +171,13 @@ print F "WIPRR yyyy MM dd hh mm ss M Thd shad shadlim sw lw pir tcase tdome batt
 # }
 # 
 	# LIST ALL PRPDECODE FILES
-@w= `ls $datapath/data/data*/prpdecode*.txt`;
-#foreach (@w){chomp($str=$_); print"$str\n" } die;
+my @w= `ls $datapath/data/data*/prpdecode*.txt`;
 if ($#w < 0 ) { print"Error, no raw files\n"; exit 1}
+my $nrec=0;
+
+	#=========================
 	#  PROCESS RAW FILES
+	#=========================
 	# FIND THE FIRST RAW FILE 
 foreach $frw (@w){
 	chomp($frw);
@@ -189,27 +193,36 @@ foreach $frw (@w){
 	} else {
 		print"PROCESS $frw\n";
 		open(FIN,$frw) or die;
+		#====================
 		# READ EACH RECORD
+		#====================
 		while (<FIN>) {
 			chomp($str=$_);
 			$str=~s/[#\n\r]+//g;
-	# 		print"STRING: $str\n";
+			@av=('prp');
+			#print"STRING: $str\n";
+# timestamp   mode thead pitch1 roll1 az1 adc10 adc11 adc12 adc13 adc14 adc15 adc16 adc17 pitch2 roll2 az2 adc20 adc21 adc22 adc23 adc24 adc25 adc26 adc27
+#       0     1    2     3      4     5   6     7     8     9     10    11    12    13    14     15    16  17    18    19    20    21    22    23    24
 			@r=split /[\s]+/g,$str;
 			#$i=0; foreach $rx (@r){print"$i, $rx\n";$i++} die;
+				#====================
 				# Mode 0==low, 1=high no shadow, 2=high shadow
+				#====================
 			$Mode=-1;
 			if($#r==40 && $r[1]==1){$Mode=1}
 			elsif($#r==40 && $r[1]==0){$Mode=0}
 			elsif($#r==201 && $r[1]==1){$Mode=2}
 			else{$ibad++}
-
-	# 		print"Mode $Mode, WIPRR\n";
+				#====================
+				# time
+				#====================
 			$dt=dtstr2dt($r[0]);
 	# 		printf"%s\n",dtstr($dt,'csv');
+				# FILL RECORD STRUCTURE
 			$record{mode}=$r[1];
 			$record{thead}=$r[2];
-			if($Mode>0){$record{shadow}=$r[25]}else{$record{shadow}=0}
-	
+			if($Mode>0){$record{shadow}=$r[25]} else{$record{shadow}=0}
+			
 				# pitch and roll av[0],av[1]
 			for($i=3; $i<=4; $i++){
 				$n=0; $x=0;
@@ -245,13 +258,13 @@ foreach $frw (@w){
 				if($n==0){$x=$missing} else{$x=$x/$n}
 				push @av,$x;
 			}
-			#$i=0; foreach(@av){printf"debug:%3d %.3f\n",$i,$_; $i++}die;
-	
+			#$i=0; foreach(@av){printf"debug:%3d %.3f\n",$i,$_; $i++} die;
+			
 			if($fixedtiltflag == 0){
 				%record=(%record,
-					p => $av[0]+$pitchcorrection,
-					r => $av[1]+$rollcorrection,
-					az => $av[2]+$headingcorrection,
+					p => $av[1]+$pitchcorrection,
+					r => $av[2]+$rollcorrection,
+					az => $av[3]+$headingcorrection,
 				);
 			}
 			else {
@@ -262,18 +275,18 @@ foreach $frw (@w){
 				);
 			}
 			%record=(%record,
-				psp => $av[3],
-				pirv => $av[4],
-				case => $av[5],
-				dome => $av[6],
-				batt => $av[10]*$battcal[0]+$battcal[1],
-				sw => $av[3]*$pspcal[0]+$pspcal[1],
-				pir => $av[4]*$pircal[0]+$pircal[1]
+				psp => $av[4],
+				pirv => $av[5],
+				case => $av[6],
+				dome => $av[7],
+				batt => $av[11]*$battcal[0]+$battcal[1],
+				sw => $av[4]*$pspcal[0]+$pspcal[1],
+				pir => $av[5]*$pircal[0]+$pircal[1]
 			);
 				# T CASE
-			if($av[5]<=0){$record{case}=$missing;}
+			if($av[6]<=0){$record{case}=$missing;}
 			else {
-				$x=log($av[5]);
+				$x=log($av[6]);
 				$y=$casecal[0]*$x*$x*$x + $casecal[1]*$x*$x + $casecal[2]*$x + $casecal[3];
 				if($y<=0){
 					$record{tcase}=$missing;
@@ -282,9 +295,9 @@ foreach $frw (@w){
 				}
 			}
 				# T DOME
-			if($av[6]<=0){$record{dome}=$missing;}
+			if($av[7]<=0){$record{dome}=$missing;}
 			else {
-				$x=log($av[6]);
+				$x=log($av[7]);
 				$y=$domecal[0]*$x*$x*$x + $domecal[1]*$x*$x + $domecal[2]*$x + $domecal[3];
 				if($y<=0){
 					$record{tdome}=$missing;
@@ -296,17 +309,18 @@ foreach $frw (@w){
 			@x = ComputeLongwave($record{pir},$record{tcase},$record{tdome},$Kcoefficient,$sigma,$epsilon,$missing);
 			$record{lw}=$x[0];
 	
-	# 		printf"mode = %d\n", $record{mode};
-	# 		printf"Thead = %.2f\n", $record{thead};
-	# 		printf"pitch=%.2f\n",$record{p};
-	# 		printf"roll=%.2f\n",$record{r};
-	# 		printf"heading=%.2f\n",$record{az};
-	# 		printf"psp=%.2f  %.2f\n",$record{psp}, $record{sw};
-	# 		printf"pir=%.2f   %.2f\n",$record{pirv}, $record{pir};
-	# 		printf"case=%.2f   %.2f\n",$record{case}, $record{tcase};
-	# 		printf"dome=%.2f   %.2f\n",$record{dome}, $record{tdome};
-	# 		printf"lw = %.2f\n", $record{lw};
-	# 		printf"batt=%.2f\n",$record{batt};
+# 			printf"mode = %d\n", $record{mode};
+# 			printf"Thead = %.2f\n", $record{thead};
+# 			printf"pitch=%.2f\n",$record{p};
+# 			printf"roll=%.2f\n",$record{r};
+# 			printf"heading=%.2f\n",$record{az};
+# 			printf"psp=%.2f  sw=%.2f\n",$record{psp}, $record{sw};
+# 			printf"pir=%.2f  pirv=%.2f\n",$record{pirv}, $record{pir};
+# 			printf"case=%.2f   %.2f\n",$record{case}, $record{tcase};
+# 			printf"dome=%.2f   %.2f\n",$record{dome}, $record{tdome};
+# 			printf"lw = %.2f\n", $record{lw};
+# 			printf"batt=%.2f\n",$record{batt};
+
 				# WIPRR -- PRP BASIC DATA
 
 	#$WIPRR,2018,05,14,00,03,15,1,40.8,44.7,10,6.57,361.14,-32.09,17.90,18.15,-5.0,3.0,356.3,13.8*4B
@@ -315,6 +329,11 @@ foreach $frw (@w){
 			$record{pir},$record{tcase},$record{tdome},$record{p},$record{r},$record{az},$record{batt};
 			$str=$str.NmeaChecksum($str);
 			print F "$str\n";
+			#print"$str\n";
+			$nrec++;
+			#if($nrec>0){exit 1}
+			
+#print F "WIPRR yyyy MM dd hh mm ss M Thd shad shadlim sw lw pir tcase tdome pitch roll hdg batt * chk
 		
 				# WIPRG -- GLOBAL
 			if ( $Mode > 0 ) {
@@ -366,7 +385,9 @@ foreach $frw (@w){
 	}
 }
 close FR; close FG; 
-#close F1; close F2; close F3; close F4; close F5; close F6; close F7; 
+close F1; close F2; close F3; close F4; close F5; close F6; close F7; 
+print"OUTPUT: $rawoutfile\n";
+
 exit 0;
 
 

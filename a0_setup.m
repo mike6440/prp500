@@ -40,10 +40,10 @@ disp(['Cal data: ',SUFILE]);
 SERIES = FindInfo(SETUPFILE,'SERIES');
 fprintf('SERIES = %s\n',SERIES);
 
-TIMESERIESPATH = fullfile(DATAPATH,'timeseries');
+TIMESERIESPATH = FindInfo(SETUPFILE,'TIMESERIESPATH');
 fprintf('TIMESERIESPATH = %s\n',TIMESERIESPATH);
 
-IMAGEPATH = fullfile(DATAPATH,'images');
+IMAGEPATH = FindInfo(SETUPFILE,'IMAGEPATH');
 fprintf('IMAGEPATH = %s\n',IMAGEPATH);
 
 str=FindInfo(SETUPFILE,'LATRANGE');

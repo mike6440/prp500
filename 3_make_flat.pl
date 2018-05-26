@@ -89,7 +89,7 @@ print"epsilon: $epsilon\n";
 print"battery coefs: @y\n";
 
 	# OPEN FLAT FILE FOR WRITE -- DA0, DAG, DA1, DA2, DA3,...,DA7 xxy
-$f = $timeseriespath.'/da0raw_flat.txt';
+$f = $timeseriespath.'/da0_flat.txt';
 print"DA0 OUTPUT $f\n";
 open FR,">$f" or die;
 printf FR "$series, Program $PROGRAMNAME v$VERSION, Raw Radiation Measurements,  Runtime %s\n",dtstr(now,'short');
@@ -113,7 +113,6 @@ for($i=1; $i<=7; $i++){
 	$cmd=sprintf("print F%d \"nrec  shad  shlim yyyy MM dd hh mm ss g s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 s16 s17 s18 s19 s20 s21 s22 s23\\n\";",$i);
 	eval $cmd;
 }
-
 	# OPEN RAW_PARSE.TXT
 $rawparsefile="$timeseriespath/raw_parse.txt";
 print"$rawparsefile";
@@ -137,7 +136,7 @@ while(<FIN>){
 		if($dt > $dtend){last}
 		if($dt >= $dtstart){
 			$nrec++;
-       #print FR "nrec shad shlim yyyy MM dd hh mm ss mode th sw lw pir tcase tdome pitch roll az batt\n";
+       		#print FR "nrec shad shlim yyyy MM dd hh mm ss mode th sw lw pir tcase tdome pitch roll az batt\n";
 			$strx="$nrec";
 			if($s[7] == 0){$strx="$strx 0 0"}else{$strx="$strx $s[9] $s[10]"}
 			$strx=$strx.sprintf(" %s",dtstr($dt,'ssv'));
@@ -196,9 +195,5 @@ while(<FIN>){
 	}
 }
 close FR; close FG; 
-#close F1; close F2; close F3; close F4; close F5; close F6; close F7; 
+close F1; close F2; close F3; close F4; close F5; close F6; close F7; 
 exit 0;
-
-
-exit;
-

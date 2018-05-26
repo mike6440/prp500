@@ -2,13 +2,15 @@
 
 global DATAPATH IMAGEPATH TIMESERIESPATH
 
-chan=7;
-ix=9000;
+chan=input('Enter channel number: ');
+%chan=7;
 str=sprintf('d%drw',chan);
-%if ~exist(str),
-	cmd=sprintf('load %s/da%d_flat.mat; d=d%drw;',TIMESERIESPATH,chan,chan);
+if ~exist(str),
+	cmd=sprintf('load %s/da%d.mat; d=d%d;',TIMESERIESPATH,chan,chan);
 	disp(cmd); eval(cmd);
-%end
+end
+return
+
 
 	% FIND INDEX TO A CLEAR TIME
 %if exist('d2rw'), d=d2rw; clear d2rw; end
