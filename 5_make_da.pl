@@ -62,7 +62,7 @@ print"\n";
 # we can derive a position from a position file that was generated from a co-running
 # DAQ program or from a supplement data file such as a SCS GPS raw file.  Special programs
 # will be required for each different supplement file.
-$FixedLocation = FindInfo($setupfile,"GPS FLAG");
+$FixedLocation = FindInfo($setupfile,"GPS FIXED FLAG");
 if($FixedLocation == 1){
 	$latfix=FindInfo($setupfile,"FIXED LAT",':');
 	$lonfix=FindInfo($setupfile,"FIXED LON",':');
@@ -109,7 +109,7 @@ printf"shadowlimit = %.1f\n", $shadowlimit;
 	# OUTPUT da0
 	# nrec yyyy MM dd hh mm ss lat lon saz sze sw lw tcase tdome pitch roll az sog cog hdg sol_n sol_d
 	#                                  deg deg w/m^2  C      C     deg deg  deg m/s m/s dg     w/m^2
-my $outfile = "$timeseriespath/da0raw.txt";
+my $outfile = "$timeseriespath/da0.txt";
 open F, ">$outfile" or die;
 print"OUTPUT RAW DA0 FILE: $outfile\n";
 printf F "$PROGRAMNAME v$VERSION,  Runtime %s\n", dtstr(now);
@@ -117,7 +117,7 @@ $hdr="nrec shrat yyyy MM dd hh mm ss thead lat lon saz sze sw lw piru tcase tdom
 print F "$hdr\n";
 
 #  OPEN THE PRP_RAW FILE 
-$da0file = "$timeseriespath/da0raw_flat.txt";
+$da0file = "$timeseriespath/da0_flat.txt";
 print"INPUT RAW FLAT FILE $da0file\n";
 if (! -f $da0file){print"DOES NOT EXIST. STOP\n"; exit 1} 
 open D, $da0file or die("FAILS TO OPEN");

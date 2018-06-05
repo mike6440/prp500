@@ -4,19 +4,26 @@ global DATAPATH IMAGEPATH TIMESERIESPATH
 
 chan=input('Enter channel number: ');
 %chan=7;
-str=sprintf('d%drw',chan);
+str=sprintf('da%d',chan);
 if ~exist(str),
-	cmd=sprintf('load %s/da%d.mat; d=d%d;',TIMESERIESPATH,chan,chan);
+	cmd=sprintf('load %s/da%d.mat;',TIMESERIESPATH,chan);
 	disp(cmd); eval(cmd);
 end
-return
+cmd=sprintf('d=da%d; clear da%d;',chan,chan);
+disp(cmd); eval(cmd);
 
+fprintf('start %s,   end %s.  Specify time (csv):\n',dtstr(d.dt(1),'csv'),dtstr(d.dt(end),'csv'))
+str=input('CSV time: ','s');
+cmd=sprintf('dts=datenum(%s);',str);
+disp(cmd); eval(cmd);  fprintf('You selected %s\n',dtstr(dts,'csv'));
 
-	% FIND INDEX TO A CLEAR TIME
-%if exist('d2rw'), d=d2rw; clear d2rw; end
-%ix = find(d.shad>50);
-%ix=ix(1);
-
+	%===============
+	% choose first sweep after input time
+	%===============
+ix=find(d.dt > dts);
+dt=d.dt(ix(1));
+ix=ix(1);
+fprintf('First sweep at %s\n',dtstr(dt,'csv'));
 dt = d.dt(ix);
 tstr=sprintf('Chan %d, Sweep %d, %s',chan,ix,dtstr(dt));
 
@@ -36,14 +43,16 @@ ij=[1:23];
 for j=1:10,
 pl = plot(ij,sw(j,:),'.b','markersize',10);
 pl2 = plot(ij,sw(j,:),'-');
-plot(8,sw(j,8),'or','markersize',10,'markerfacecolor','r')
+plot(7,sw(j,7),'or','markersize',10,'markerfacecolor','r')
 plot(12,sw(j,12),'or','markersize',10,'markerfacecolor','r')
 plot(16,sw(j,16),'or','markersize',10,'markerfacecolor','r')
 end
 grid
 set(gca,'fontname','arial','fontweight','bold','fontsize',14);
 txt=title(tstr);
-
+str=sprintf('Shadow ratio = %.1f',d.shad);
+txt=text(0,0,str);
+set(txt,'
 cmd=sprintf('saveas(gcf,''%s/sweep_chan%d_%d_%s.png'',''png'')',IMAGEPATH,chan,ix,dtstr(d.dt(ix),'short'));
 disp(cmd); eval(cmd);
 

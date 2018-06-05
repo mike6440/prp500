@@ -4,30 +4,30 @@ global GPSFIXEDFLAG FIXEDLAT FIXEDLON
 global FIXEDTILTFLAG FIXEDPITCH FIXEDROLL FIXEDHEADING PITCHCORR ROLLCORR HDGCORR
 global SHRATCLEAR
 
-	% DA0RAW_FLAT
-filename=fullfile(TIMESERIESPATH,'da0raw_flat.txt');
+	% DA0_FLAT
+filename=fullfile(TIMESERIESPATH,'da0_flat.txt');
 arrayname='da0f';
 ReadRTimeSeries
 sv=fullfile(TIMESERIESPATH,'da0raw_flat.mat');
 cmd=sprintf('save %s da0f',sv);
 disp(cmd); eval(cmd);
-	% DA0RAW
-filename=fullfile(TIMESERIESPATH,'da0raw.txt');
+	% DA0
+filename=fullfile(TIMESERIESPATH,'da0.txt');
 arrayname='da0';
 ReadRTimeSeries
-sv=fullfile(TIMESERIESPATH,'da0raw.mat');
+sv=fullfile(TIMESERIESPATH,'da0.mat');
 cmd=sprintf('save %s da0',sv);
 disp(cmd); eval(cmd);
-return;
+
 	% DAx_FLAT
 for iqxx=1:7,
 	fprintf('iqxx=%d\n',iqxx);
 	filename=sprintf('%s/da%d_flat.txt',TIMESERIESPATH,iqxx);
-	arrayname=sprintf('d%d',iqxx);
+	arrayname=sprintf('da%d',iqxx);
 	ReadRTimeSeries
-	sv=sprintf('%s/d%d.mat',TIMESERIESPATH,iqxx);
+	sv=sprintf('%s/da%d.mat',TIMESERIESPATH,iqxx);
 	disp(sv);
-	cmd=sprintf('save %s d%d',sv,iqxx);
+	cmd=sprintf('save %s %s',sv,arrayname);
 	disp(cmd); eval(cmd);
 end
 return

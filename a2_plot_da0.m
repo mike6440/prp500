@@ -6,7 +6,8 @@ global LATRANGE LONRANGE TEMPRANGE STARTTIME ENDTIME
 
 
 if ~exist('da0f'),
-	load(fullfile(TIMESERIESPATH,'da0raw_flat.mat'))
+	disp('LOAD MAT FILE')
+	load(fullfile(TIMESERIESPATH,'da0_flat.mat'))
 end
 %nrec shad shlim yyyy MM dd hh mm ss th sw lw pir tcase tdome pitch roll az batt
 
